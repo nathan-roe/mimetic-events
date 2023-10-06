@@ -12,10 +12,5 @@ fun main(args: Array<String>) {
 //    }
 //
 //    keepAlive.shutDown()
-    KeyEventHandler().runKeyEventThread()
-    thread {
-        Thread.sleep(5000)
-        val fifoOutput = File("/tmp/keyevent.fifo").readLines(Charset.defaultCharset()).toString()
-        println("Fifo output: $fifoOutput")
-    }
+    KeyEventHandler().getKeyEvents()
 }
