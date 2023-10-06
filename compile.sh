@@ -4,7 +4,7 @@ kotlinc-jvm -include-runtime -d KeyEventHandler.jar *.kt
 popd
 
 pushd ./src/main/JNI
-gcc keyevent.c -o libkeyevent.so -shared -fPIC \
+gcc keyevent.cpp -o libkeyevent.so -shared -fPIC \
   -I /usr/lib/jvm/java-11-openjdk-amd64/include \
   -I /usr/lib/jvm/java-11-openjdk-amd64/include/linux
 popd
