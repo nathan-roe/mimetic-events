@@ -1,0 +1,3 @@
+services:
+  mimetic:
+    image: openjdk:11

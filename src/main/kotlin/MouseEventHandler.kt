@@ -1,18 +1,11 @@
 import java.awt.MouseInfo
 import java.awt.Robot
-import java.awt.event.InputEvent
-import java.util.*
+import java.util.ArrayList
 
-
-class KeepAlive {
+class MouseEventHandler : EventHandler {
     private var robot: Robot = Robot()
-
-    fun shutDown() {
-        robot.mouseMove(79, 797)
-        robot.mousePress(InputEvent.BUTTON1_DOWN_MASK)
-        robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK)
-    }
-
+    override val events = ArrayList<MouseEvent>()
+    private var trackingMouseEvents: Boolean = true
 
     fun changeMousePos(startX: Int, startY: Int, endX: Int, endY: Int, delayInMs: Int = 2) {
         robot.mouseMove(startX, startY)
@@ -33,39 +26,34 @@ class KeepAlive {
         println("Finished moving the mouse")
     }
 
-    fun mimic() {
-        val mouseRoute = ArrayList<MouseCoordinates>()
+    override fun captureEvents(startTimeMillis: Long) {
         var mouseLocation = MouseInfo.getPointerInfo().location
-        mouseRoute.add(MouseCoordinates(mouseLocation.x, mouseLocation.y, System.currentTimeMillis()))
+        events.add(MouseEvent(mouseLocation.x, mouseLocation.y, System.currentTimeMillis()))
 
-        while(true) {
+        while(trackingMouseEvents) {
             println("In while loop...")
             mouseLocation = MouseInfo.getPointerInfo().location
-            println(String.format("posX: %s, x: %s, posY: %s, y: %s", mouseRoute.last().posX, mouseLocation.x, mouseRoute.last().posY, mouseLocation.y))
+            println(String.format("posX: %s, x: %s, posY: %s, y: %s", events.last().posX, mouseLocation.x, events.last().posY, mouseLocation.y))
             if(
-                mouseRoute.last().posX != mouseLocation.x
-                || mouseRoute.last().posY != mouseLocation.y
+                events.last().posX != mouseLocation.x
+                || events.last().posY != mouseLocation.y
             ) {
                 println("adding coordinates...")
-                mouseRoute.add(MouseCoordinates(mouseLocation.x, mouseLocation.y, System.currentTimeMillis()))
-            }
-
-            if(mouseRoute.size >= 100) {
-                break
+                events.add(MouseEvent(mouseLocation.x, mouseLocation.y, System.currentTimeMillis()))
             }
         }
+    }
 
-        mouseRoute.forEach {
+    override fun getEvents() {
+        events.forEach {
             println(String.format("posX: %s, posY: %s", it.posX, it.posY))
         }
         println("Repeating previous mouse movements: ")
-        mouseRoute.forEach {
+        events.forEach {
             println(String.format("Mouse position at: x: %s, y: %s", it.posX, it.posY))
             robot.mouseMove(it.posX, it.posY)
-            val delayInMs = it.timeRecorded - mouseRoute[(mouseRoute.indexOf(it) - 1).coerceAtLeast(0)].timeRecorded
+            val delayInMs = it.eventTime - events[(events.indexOf(it) - 1).coerceAtLeast(0)].eventTime
             robot.delay(delayInMs.toInt())
         }
-
-
     }
 }

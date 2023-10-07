@@ -11,10 +11,11 @@
 #include <errno.h>
 #include <sys/time.h>
 #include <iostream>
+#include <cstdio>
 #include "KeyEventHandler.h"
 
 using namespace std;
-
+using jstart = int_least64_t;
 
 typedef struct keyevent {
     long event_time;
@@ -79,7 +80,8 @@ jobjectArray construct_jni_keyevents(JNIEnv *env, jobject obj) {
     return jni_keyevents;
 }
 
-JNIEXPORT void JNICALL Java_KeyEventHandler_captureKeyEvents(JNIEnv *env, jobject obj) {
+JNIEXPORT void JNICALL Java_KeyEventHandler_captureEvents(JNIEnv *env, jobject obj, jlong jstart) {
+
     captureKeyEvents();
 }
 

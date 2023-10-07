@@ -1,16 +1,18 @@
-import java.io.File
-import java.nio.charset.Charset
 import kotlin.concurrent.thread
 
 fun main(args: Array<String>) {
-//    val keepAlive = KeepAlive()
-////    keepAlive.changeMousePos(0, 0, 500, 500)
-////    keepAlive.mimic()
-//
-//    if(System.getProperty("os.name").lowercase(Locale.getDefault()) == "linux") {
-//        println("Program running on Linux.")
-//    }
-//
-//    keepAlive.shutDown()
-    KeyEventHandler().getKeyEvents()
+    System.setProperty("java.awt.headless", "false");
+    val currentTimeMillis = System.currentTimeMillis()
+    thread {
+        val keyEventHandler = KeyEventHandler()
+        keyEventHandler.captureEvents(currentTimeMillis)
+        Thread.sleep(5000)
+        keyEventHandler.getEvents()
+    }
+    thread {
+        val mouseEventHandler = MouseEventHandler()
+        mouseEventHandler.captureEvents(currentTimeMillis)
+        Thread.sleep(5000)
+        mouseEventHandler.getEvents()
+    }
 }

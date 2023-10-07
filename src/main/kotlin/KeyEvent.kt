@@ -1,6 +1,7 @@
-class KeyEvent(
+import Event
+
+class KeyEvent (
     val keyCode: Int,
     val keyState: Int,
-    val eventTime: Long
-) {
-}
+    override val eventTime: Long
+) : Event
