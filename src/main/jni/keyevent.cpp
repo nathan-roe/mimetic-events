@@ -10,12 +10,12 @@
 #include <signal.h>
 #include <errno.h>
 #include <sys/time.h>
+#include <fstream>
 #include <iostream>
 #include <cstdio>
 #include "KeyEventHandler.h"
 
 using namespace std;
-using jstart = int_least64_t;
 
 typedef struct keyevent {
     long event_time;
@@ -23,29 +23,36 @@ typedef struct keyevent {
     int key_state;
 } KeyEvent;
 
+static const char* LOG_FILE = "mimetic-log.txt";
+static long start_time = 0;
 static bool running = true;
 static int keyboard_fd;
 static const char* user_input;
 static vector<KeyEvent> keyevents;
 
-void captureKeyEvents() {
+void log_event(const char* log) {
+    std::ofstream fs(LOG_FILE);
+    if(!fs) { exit(1); }
+    fs<<log<<"\n";
+    fs.close();
+}
+
+void capture_key_events() {
     struct input_event event;
-    struct timeval start, stop;
+    struct timeval stop;
 
     if ((keyboard_fd = open("/dev/input/event1", O_RDONLY)) < 0) {
         fprintf(stderr, "\nUnable to read from the device\n");
-        exit(1);
+        exit(2);
     }
-
-    gettimeofday(&start, NULL);
 
     while (running) {
         read(keyboard_fd, &event, sizeof(event));
 
         if (event.type == EV_KEY && event.value < 2) {
             gettimeofday(&stop, NULL);
-            long event_time = (stop.tv_sec - start.tv_sec) * 1000000 + stop.tv_usec - start.tv_usec;
-            KeyEvent kev = { .event_time = event_time, .key_code = event.code, .key_state = event.value };
+            long event_time = stop.tv_sec * 1000 + stop.tv_usec / 1000;
+            KeyEvent kev = { .event_time = event_time - start_time, .key_code = event.code, .key_state = event.value };
             keyevents.push_back(kev);
         }
     }
@@ -55,18 +62,23 @@ void captureKeyEvents() {
 
 jobjectArray construct_jni_keyevents(JNIEnv *env, jobject obj) {
     jclass handle_cls = env->FindClass("KeyEventHandler");
-    jfieldID event_fld = env->GetFieldID(handle_cls, "keyEvents", "[LKeyEvent;");
+    jfieldID event_fld = env->GetFieldID(handle_cls, "events", "");
     if(handle_cls == NULL || event_fld == NULL) {
-        exit(2);
+        log_event("handle_cls/event_fld not found, exiting with code 3");
+        exit(3);
     }
+    log_event("handle_cls and event_fld set");
 
     jclass event_cls = env->FindClass("KeyEvent");
     jmethodID event_ctr = env->GetMethodID(event_cls, "<init>", "(IIJ)V");
     if(event_cls == NULL || event_ctr == NULL) {
-        exit(3);
+        log_event("event_cls/event_ctr not found, exiting with code 4");
+        exit(4);
     }
+    log_event("event_cls and event_ctr set");
 
     jobjectArray jni_keyevents = env->NewObjectArray(keyevents.size(), event_cls, nullptr);
+    log_event("Setting jni_keyevents...");
 
     for (int i = 0; i < keyevents.size(); i++) {
         KeyEvent kev = keyevents[i];
@@ -76,17 +88,21 @@ jobjectArray construct_jni_keyevents(JNIEnv *env, jobject obj) {
         env->DeleteLocalRef(event);
     }
 
+    log_event("jni_keyevents successfully set");
+
     env->SetObjectField(obj, event_fld, jni_keyevents);
+    log_event("event field updated");
     return jni_keyevents;
 }
 
 JNIEXPORT void JNICALL Java_KeyEventHandler_captureEvents(JNIEnv *env, jobject obj, jlong jstart) {
-
-    captureKeyEvents();
+    start_time = (long)jstart;
+    capture_key_events();
 }
 
-JNIEXPORT jobjectArray JNICALL Java_KeyEventHandler_retrieveKeyEvents(JNIEnv *env, jobject obj) {
+JNIEXPORT void JNICALL Java_KeyEventHandler_retrieveKeyEvents(JNIEnv *env, jobject obj) {
     running = false;
-    jobjectArray jni_keyevents = construct_jni_keyevents(env, obj);
-    return jni_keyevents;
+    log_event("Running state set to false");
+    construct_jni_keyevents(env, obj);
+    log_event("Key retrieval was successful");
 }

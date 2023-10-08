@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 JNIEXPORT void JNICALL Java_KeyEventHandler_captureEvents(JNIEnv *, jobject, jlong);
-JNIEXPORT jobjectArray JNICALL Java_KeyEventHandler_retrieveKeyEvents(JNIEnv *, jobject, jlong);
+JNIEXPORT void JNICALL Java_KeyEventHandler_retrieveKeyEvents(JNIEnv *, jobject);
 #ifdef __cplusplus
 }
 #endif
