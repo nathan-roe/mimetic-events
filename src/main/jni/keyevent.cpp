@@ -37,7 +37,7 @@ void log_event(const char* log) {
     fs.close();
 }
 
-void capture_key_events() {
+void capture_key_events(JNIEnv *env) {
     struct input_event event;
     struct timeval stop;
 
@@ -45,6 +45,9 @@ void capture_key_events() {
         fprintf(stderr, "\nUnable to read from the device\n");
         exit(2);
     }
+
+    jclass handle_cls = env->FindClass("KeyEventHandler");
+    jfieldID capturing_key_id = env->GetFieldID(handle_cls, "capturingKeys", "Z");
 
     while (running) {
         read(keyboard_fd, &event, sizeof(event));
@@ -55,25 +58,36 @@ void capture_key_events() {
             KeyEvent kev = { .event_time = event_time - start_time, .key_code = event.code, .key_state = event.value };
             keyevents.push_back(kev);
         }
+
+        log_event("Value of capture key field: ");
+        log_event(((bool) env->GetBooleanField(handle_cls, capturing_key_id)) ? "true" : "false");
+        if(!((bool) env->GetBooleanField(handle_cls, capturing_key_id))) {
+            break;
+        }
     }
 
+    log_event("Closing keyboard");
     close(keyboard_fd);
 }
 
-jobjectArray construct_jni_keyevents(JNIEnv *env, jobject obj) {
+void construct_jni_keyevents(JNIEnv *env, jobject obj) {
     jclass handle_cls = env->FindClass("KeyEventHandler");
-    jfieldID event_fld = env->GetFieldID(handle_cls, "events", "");
-    if(handle_cls == NULL || event_fld == NULL) {
-        log_event("handle_cls/event_fld not found, exiting with code 3");
+    jfieldID event_fld = env->GetFieldID(handle_cls, "keyEvents", "[LKeyEvent;");
+    if(handle_cls == NULL) {
+        log_event("handle_cls not found, exiting with code 3");
         exit(3);
+    }
+    if(event_fld == NULL) {
+        log_event("event_fld not found, exiting with code 4");
+        exit(4);
     }
     log_event("handle_cls and event_fld set");
 
     jclass event_cls = env->FindClass("KeyEvent");
     jmethodID event_ctr = env->GetMethodID(event_cls, "<init>", "(IIJ)V");
     if(event_cls == NULL || event_ctr == NULL) {
-        log_event("event_cls/event_ctr not found, exiting with code 4");
-        exit(4);
+        log_event("event_cls/event_ctr not found, exiting with code 5");
+        exit(5);
     }
     log_event("event_cls and event_ctr set");
 
@@ -92,12 +106,11 @@ jobjectArray construct_jni_keyevents(JNIEnv *env, jobject obj) {
 
     env->SetObjectField(obj, event_fld, jni_keyevents);
     log_event("event field updated");
-    return jni_keyevents;
 }
 
 JNIEXPORT void JNICALL Java_KeyEventHandler_captureEvents(JNIEnv *env, jobject obj, jlong jstart) {
     start_time = (long)jstart;
-    capture_key_events();
+    capture_key_events(env);
 }
 
 JNIEXPORT void JNICALL Java_KeyEventHandler_retrieveKeyEvents(JNIEnv *env, jobject obj) {

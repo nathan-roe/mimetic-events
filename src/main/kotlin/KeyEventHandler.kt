@@ -1,5 +1,6 @@
 class KeyEventHandler : EventHandler {
-    override val events: List<KeyEvent> = mutableListOf()
+    private var capturingKeys = true
+    private var keyEvents = arrayOf<KeyEvent>()
 
     init {
         System.loadLibrary("keyevent")
@@ -9,10 +10,11 @@ class KeyEventHandler : EventHandler {
 
     override fun retrieveEvents(): List<Event> {
         retrieveKeyEvents()
-        println(String.format("Retrieved %s key events", events.size))
-        events.map {
+        capturingKeys = false
+        println(String.format("Retrieved %s key events", keyEvents.size))
+        keyEvents.map {
             println(String.format("key code: %s, key state: %s, event time: %s", it.keyCode, it.keyState, it.eventTime))
         }
-        return events
+        return keyEvents.asList()
     }
 }

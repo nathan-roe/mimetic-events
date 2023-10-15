@@ -3,7 +3,7 @@ import java.awt.Robot
 
 class MouseEventHandler : EventHandler {
     private var robot: Robot = Robot()
-    override val events: List<MouseEvent> = mutableListOf()
+    private var mouseEvents: List<MouseEvent> = mutableListOf()
     private var trackingMouseEvents: Boolean = true
 
     fun changeMousePos(startX: Int, startY: Int, endX: Int, endY: Int, delayInMs: Int = 2) {
@@ -27,25 +27,26 @@ class MouseEventHandler : EventHandler {
 
     override fun captureEvents(startTimeMillis: Long) {
         var mouseLocation = MouseInfo.getPointerInfo().location
-        events.plus(MouseEvent(mouseLocation.x, mouseLocation.y, System.currentTimeMillis()))
+        mouseEvents.plus(MouseEvent(mouseLocation.x, mouseLocation.y, System.currentTimeMillis()))
 
         while(trackingMouseEvents) {
             mouseLocation = MouseInfo.getPointerInfo().location
             if(
-                events.isEmpty()
-                || events.last().posX != mouseLocation.x
-                || events.last().posY != mouseLocation.y
+                mouseEvents.isEmpty()
+                || mouseEvents.last().posX != mouseLocation.x
+                || mouseEvents.last().posY != mouseLocation.y
             ) {
-                events.plus(MouseEvent(mouseLocation.x, mouseLocation.y, System.currentTimeMillis()))
+                mouseEvents = mouseEvents.plus(MouseEvent(mouseLocation.x, mouseLocation.y, System.currentTimeMillis()))
             }
         }
     }
 
     override fun retrieveEvents(): List<MouseEvent> {
-        println(String.format("Retrieved %s mouse events", events.size))
-        events.map {
+        println(String.format("Retrieved %s mouse events", mouseEvents.size))
+        trackingMouseEvents = false
+        mouseEvents.map {
             println(String.format("posX: %s, posY: %s, event time: %s", it.posX, it.posY, it.eventTime))
         }
-        return events
+        return mouseEvents
     }
 }
